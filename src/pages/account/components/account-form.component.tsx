@@ -1,38 +1,62 @@
-import { useRef } from "react";
+import React from "react";
 import classes from "./account-form.component.module.css";
 import { useNavigate } from "react-router-dom";
 import { saveAccount } from "../api";
 import { appRoutes } from "@/core/router";
+import { validateFormCuenta } from "../validations";
+import { AccountError, AccountVM, createEmptyAccountError, createEmptyAccountVm } from "../account.vm";
 export const AccountFormComponent = () => {
-
-    const accountTypeRef = useRef<HTMLSelectElement>(null);
-    const aliasRef = useRef<HTMLInputElement>(null);
+    const [account, setAccount] = React.useState<AccountVM>(createEmptyAccountVm());
+    const [errors, setErrors] = React.useState<AccountError>(
+        createEmptyAccountError()
+    );
     const navigate = useNavigate();
-
-    const handleGuardarUsuario = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const accountType = accountTypeRef.current?.value ?? "";
-        const alias = aliasRef.current?.value ?? "";
-        saveAccount({ type: accountType, name: alias });
-        navigate(appRoutes.accountList);
-    }
+        const formValidationResult = validateFormCuenta(account);
+        setErrors(formValidationResult.errors);
+        if (formValidationResult.succeeded) {
+            saveAccount(account);
+            navigate(appRoutes.accountList);
+        }
+    };
+
+    const handleFieldChange = (
+        e:
+            | React.ChangeEvent<HTMLInputElement>
+            | React.ChangeEvent<HTMLSelectElement>
+    ) => {
+        setAccount({ ...account, [e.target.name]: e.target.value });
+    };
 
     return (
-        <form className={classes.form} onSubmit={handleGuardarUsuario}>
-            <div>
-                <label>Tipo de cuenta:</label>
-                <select ref={accountTypeRef}>
-                    <option value="">Seleccionar</option>
-                    <option value="1">Gastos mes</option>
-                    <option value="2">Compartir</option>
-                    <option value="3">Ahorro</option>
-                </select>
+        <form className={classes.form} onSubmit={handleSubmit}>
+            <div className={classes.sectionForm}>
+                <div className={classes.sectionFormColumna1}>
+                    <label>Tipo de cuenta:</label>
+                    <label>Alias:</label>
+                </div>
+                <div className={classes.sectionFormColumna2}>
+                    <div className={classes.selectType}>
+                        <select name="type"
+                            onChange={handleFieldChange}
+                            value={account.type}>
+                            <option value="">Seleccionar</option>
+                            <option value="1">Cuenta Corriente</option>
+                            <option value="2">Cuenta de Ahorro</option>
+                            <option value="3">Cuenta de Nómina</option>
+                        </select>
+                        <p className={classes.error}>{errors.type}</p>
+                    </div>
+                    <div className={classes.inputName}>
+                        <input
+                            name="name"
+                            onChange={handleFieldChange} />
+                        <p className={classes.error}>{errors.name}</p>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label>Alias:</label>
-                <input type="text" ref={aliasRef} />
-            </div>
-            <button type="submit">Guardar</button>
+            <button className={classes.button} type="submit">Guardar</button>
         </form>
 
     )
